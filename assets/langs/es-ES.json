@@ -1,0 +1,23 @@
+{
+  "app_title": "Blog de Noticias",
+  "all_news": "Todas las Noticias",
+  "technology": "Tecnología",
+  "fashion": "Moda",
+  "sports": "Deportes",
+  "science": "Ciencia",
+  "select_language": "Seleccionar idioma",
+  "language": "Idioma",
+  "profile": "Perfil",
+  "change_password": "Cambiar Contraseña",
+  "dark_mode": "Modo Oscuro",
+  "view_profile": "Ver Perfil",
+  "home": "Inicio",
+  "audio_article": "Artículo en Audio",
+  "create_new_article": "Crear Nuevo Artículo",
+  "bookmark": "Marcadores",
+  "membership": "Membresía",
+  "settings": "Configuraciones",
+  "terms_and_conditions": "Términos y Condiciones",
+  "help_and_support": "Ayuda y Soporte",
+  "logout": "Cerrar sesión"
+}

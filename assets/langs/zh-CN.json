@@ -1,0 +1,23 @@
+{
+  "app_title": "新闻博客",
+  "all_news": "所有新闻",
+  "technology": "科技",
+  "fashion": "时尚",
+  "sports": "体育",
+  "science": "科学",
+  "select_language": "选择语言",
+  "language": "语言",
+  "profile": "个人资料",
+  "change_password": "更改密码",
+  "dark_mode": "黑暗模式",
+  "view_profile": "查看个人资料",
+  "home": "首页",
+  "audio_article": "音频文章",
+  "create_new_article": "创建新文章",
+  "bookmark": "书签",
+  "membership": "会员",
+  "settings": "设置",
+  "terms_and_conditions": "条款和条件",
+  "help_and_support": "帮助与支持",
+  "logout": "登出"
+}

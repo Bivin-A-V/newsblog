@@ -1,0 +1,20 @@
+{   "app_title":"NewsBlog",
+    "all_news":"All News",
+    "technology":"Technology",
+    "fashion":"Fashion",
+    "sports":"Sports",
+    "science":"Science",
+    "select_language": "Select Language",
+    "language": "Language",
+    "profile": "Profile",
+    "change_password": "Change Password",
+    "dark_mode": "Dark Mode",
+    "view_profile": "View Profile",
+    "home": "Home",
+    "audio_article": "Audio Article",
+    "create_new_article": "Create New Article",
+    "bookmark": "Bookmark",
+    "membership": "Membership",
+    "settings": "Settings"
+  }
+  
