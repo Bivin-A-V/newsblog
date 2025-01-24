@@ -45,6 +45,12 @@ class NBSignInScreenState extends State<NBSignInScreen> {
   @override
   void initState() {
     super.initState();
+    // Only pre-fill the email if it's changed via Edit Profile screen
+    if (userState.email.isNotEmpty) {
+      emailController.text = userState.email; // Pre-fill with updated email
+    } else {
+      emailController.clear(); // Clear in case there's no updated email
+    }
   }
 
   Future<void> signInWithEmailPassword() async {

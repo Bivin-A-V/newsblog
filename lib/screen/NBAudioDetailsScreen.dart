@@ -27,7 +27,7 @@ class _NBAudioDetailsScreenState extends State<NBAudioDetailsScreen> {
   String _audioDescription = ''; // Audio generated from the description
 
   bool isFollowing = false;
-  late Timer _timer;
+  Timer? _timer;
 
   @override
   void initState() {
@@ -46,45 +46,55 @@ class _NBAudioDetailsScreenState extends State<NBAudioDetailsScreen> {
 
     // Set handlers for play, pause, and completion
     _flutterTts.setStartHandler(() {
-      setState(() {
-        _isPlaying = true;
-        _isPaused = false;
-      });
-      _startTimer(); // Start the timer when TTS starts
+      if (mounted) {
+        setState(() {
+          _isPlaying = true;
+          _isPaused = false;
+        });
+        _startTimer();
+      } // Start the timer when TTS starts
     });
 
     _flutterTts.setCompletionHandler(() {
-      setState(() {
-        _isPlaying = false;
-        _isPaused = false;
-      });
-      _stopTimer(); // Stop the timer when TTS completes
+      if (mounted) {
+        setState(() {
+          _isPlaying = false;
+          _isPaused = false;
+        });
+        _stopTimer();
+      } // Stop the timer when TTS completes
     });
 
     // Set handlers for play, pause, and completion
     _flutterTts.setStartHandler(() {
-      setState(() {
-        _isPlaying = true;
-        _isPaused = false;
-      });
-      _startTimer();
+      if (mounted) {
+        setState(() {
+          _isPlaying = true;
+          _isPaused = false;
+        });
+        _startTimer();
+      }
     });
 
     _flutterTts.setCompletionHandler(() {
-      setState(() {
-        _isPlaying = false;
-        _isPaused = false;
-        _currentPosition = 0.0;
-      });
-      _stopTimer();
+      if (mounted) {
+        setState(() {
+          _isPlaying = false;
+          _isPaused = false;
+          _currentPosition = _totalDuration;
+        });
+        _stopTimer();
+      }
     });
 
     _flutterTts.setErrorHandler((msg) {
-      setState(() {
-        _isPlaying = false;
-        _isPaused = false;
-      });
-      _stopTimer();
+      if (mounted) {
+        setState(() {
+          _isPlaying = false;
+          _isPaused = false;
+        });
+        _stopTimer();
+      }
     });
   }
 
@@ -105,18 +115,22 @@ class _NBAudioDetailsScreenState extends State<NBAudioDetailsScreen> {
   // Start a timer to update progress
   void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        _currentPosition = _currentPosition + 1.0; // Update the progress
-        if (_currentPosition >= _totalDuration) {
-          _stopTimer();
-        }
-      });
+      if (mounted) {
+        setState(() {
+          _currentPosition += 1.0; // Update the progress
+          if (_currentPosition >= _totalDuration) {
+            _currentPosition = _totalDuration;
+            _stopTimer();
+          }
+        });
+      }
     });
   }
 
   // Stop the timer
   void _stopTimer() {
-    _timer.cancel();
+    _timer?.cancel();
+    _timer = null;
   }
 
   // Play/Pause button functionality
@@ -151,6 +165,7 @@ class _NBAudioDetailsScreenState extends State<NBAudioDetailsScreen> {
 
   @override
   void dispose() {
+    _stopTimer();
     _flutterTts.stop();
     super.dispose();
   }

@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:newsblog/model/news_model.dart';
 
 class NewsService {
-  final String _apiKey = '33753398ed8b877af2bb18bd47fecd03';
+  final String _apiKey = '94fe35aaedc4301418621c305d981971';
   final String _baseUrl = 'https://gnews.io/api/v4/top-headlines';
 
   // Fetch news by category

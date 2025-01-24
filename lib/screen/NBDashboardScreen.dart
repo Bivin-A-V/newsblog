@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:nb_utils/nb_utils.dart';
@@ -10,11 +12,47 @@ import 'package:newsblog/screen/NBProfileScreen.dart';
 import 'package:newsblog/screen/NBSettingScreen.dart';
 import 'package:newsblog/screen/NBSignoutScreen.dart';
 import 'package:newsblog/screen/NBTermsAndConditionsScreen.dart';
-import 'package:newsblog/utils/user_state.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-class AppDrawer extends StatelessWidget {
-  final String? profileImageUrl;
-  AppDrawer(this.profileImageUrl);
+class AppDrawer extends StatefulWidget {
+  const AppDrawer({super.key});
+
+  @override
+  _AppDrawerState createState() => _AppDrawerState();
+}
+
+class _AppDrawerState extends State<AppDrawer> {
+  String? profileImageUrl;
+  String? name;
+
+  @override
+  void initState() {
+    super.initState();
+    _listenToUserProfileChanges();
+  }
+
+  // Listen to real-time updates from Firestore for user profile changes
+  void _listenToUserProfileChanges() {
+    String userId = FirebaseAuth.instance.currentUser!.uid;
+
+    FirebaseFirestore.instance
+        .collection('Users')
+        .doc(userId)
+        .snapshots()
+        .listen((snapshot) {
+      if (snapshot.exists) {
+        if (mounted) {
+          setState(() {
+            name = snapshot.get('name'); // Fetch updated name
+            profileImageUrl =
+                snapshot.get('profileImageUrl'); // Fetch updated image URL
+          });
+        }
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Drawer(
@@ -23,7 +61,7 @@ class AppDrawer extends StatelessWidget {
         children: [
           UserAccountsDrawerHeader(
             accountName: Text(
-              userState.name.isNotEmpty ? userState.name : userState.signupName,
+              name ?? 'User',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             accountEmail: GestureDetector(
@@ -39,13 +77,12 @@ class AppDrawer extends StatelessWidget {
               backgroundColor: Colors.blue,
               backgroundImage: profileImageUrl != null
                   ? NetworkImage(profileImageUrl!)
-                  : (userState.profileImage != null
-                      ? FileImage(userState.profileImage!)
-                      : null),
-              child: profileImageUrl == null && userState.profileImage == null
+                  : const AssetImage('images/placeholder.jpg')
+                      as ImageProvider, // Default placeholder image
+              child: profileImageUrl == null
                   ? Text(
-                      userState.name.isNotEmpty
-                          ? userState.name[0].toUpperCase()
+                      name != null && name!.isNotEmpty
+                          ? name![0].toUpperCase()
                           : 'NB',
                       style:
                           const TextStyle(fontSize: 20.0, color: Colors.white),

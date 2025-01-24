@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -8,8 +7,8 @@ import 'package:newsblog/model/news_model.dart';
 import 'package:newsblog/screen/NBCreateNewArticleScreen.dart';
 import 'package:newsblog/screen/NBDashboardScreen.dart';
 import 'package:newsblog/screen/NBNewsDetailsScreen.dart';
+import 'package:newsblog/services/database.dart';
 import 'package:newsblog/services/news_service.dart';
-import 'package:newsblog/utils/user_state.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:newsblog/utils/NBColors.dart';
 
@@ -54,6 +53,23 @@ class NBHomeScreenState extends State<NBHomeScreen>
       fashionNews = await newsService.fetchNews('fashion');
       sportsNews = await newsService.fetchNews('sports');
       scienceNews = await newsService.fetchNews('science');
+
+      // Fetch created articles
+      List<NewsModel> createdArticles =
+          await DataBaseHelper().fetchAllArticles();
+
+      // Get today's date in the same format as `publishedAt`
+      final String today = DateFormat('dd-MM-yyyy').format(DateTime.now());
+
+      // Filter articles published today
+      List<NewsModel> todayArticles = createdArticles.where((article) {
+        return article.publishedAt == today && !article.isAudioArticle;
+      }).toList();
+      // Merge created articles with API news
+      setState(() {
+        allNews = [...todayArticles, ...allNews];
+        allNews.sort((a, b) => b.publishedAt.compareTo(a.publishedAt));
+      });
     } catch (e) {
       log("Error fetching news: $e");
     } finally {
@@ -65,28 +81,29 @@ class NBHomeScreenState extends State<NBHomeScreen>
     }
   }
 
-  // Handle adding new article
   Future<void> _addNewArticle() async {
     final newArticle = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => NBCreateNewArticleScreen()),
     );
 
-    if (newArticle != null) {
+    // If no article was returned, exit
+    if (newArticle == null) return;
+
+    try {
+      // Fetch articles from Firestore
+      List<NewsModel> createdArticles =
+          await DataBaseHelper().fetchAllArticles();
+
+      // Combine API news with created articles
       setState(() {
-        allNews.insert(
-            0, newArticle); // Add the new article to the top of the list
+        allNews = [...createdArticles, ...allNews];
       });
+    } catch (e) {
+      toasty(context, 'Failed to fetch latest articles from Firestore.');
     }
   }
 
-  @override
-  void dispose() {
-    tabController?.dispose();
-    super.dispose();
-  }
-
-  // Function to get the image provider (either FileImage or NetworkImage)
   ImageProvider<Object> _getImageProvider(String imageUrl) {
     if (imageUrl.startsWith('http') || imageUrl.startsWith('https')) {
       return NetworkImage(imageUrl);
@@ -101,7 +118,7 @@ class NBHomeScreenState extends State<NBHomeScreen>
     }
 
     return Column(
-      mainAxisSize: MainAxisSize.min, // Shrink-wrap the Column
+      mainAxisSize: MainAxisSize.min,
       children: [
         const SizedBox(height: 10),
         CarouselSlider.builder(
@@ -153,10 +170,7 @@ class NBHomeScreenState extends State<NBHomeScreen>
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               TextButton(
-                onPressed: () {
-                  // Navigate to create a new article screen
-                  _addNewArticle();
-                },
+                onPressed: _addNewArticle,
                 child: const Text(
                   'Add Article',
                   style: TextStyle(
@@ -171,11 +185,9 @@ class NBHomeScreenState extends State<NBHomeScreen>
         ),
         const SizedBox(height: 10),
         Flexible(
-          // Use Flexible to prevent height constraints issue
           child: ListView.builder(
-            shrinkWrap: true, // Allow ListView to size itself
-            physics:
-                const NeverScrollableScrollPhysics(), // Prevent scroll conflict
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
             itemCount: allNews.length,
             itemBuilder: (context, index) {
               final news = allNews[index];
@@ -194,7 +206,7 @@ class NBHomeScreenState extends State<NBHomeScreen>
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
                       image: DecorationImage(
-                        image: news.imageUrl != null && news.imageUrl.isNotEmpty
+                        image: news.imageUrl.isNotEmpty
                             ? NetworkImage(news.imageUrl)
                             : const AssetImage('assets/images/placeholder.png')
                                 as ImageProvider,
@@ -265,7 +277,7 @@ class NBHomeScreenState extends State<NBHomeScreen>
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(10),
                 image: DecorationImage(
-                  image: news.imageUrl != null && news.imageUrl.isNotEmpty
+                  image: news.imageUrl.isNotEmpty
                       ? NetworkImage(news.imageUrl)
                       : const AssetImage('assets/images/placeholder.png')
                           as ImageProvider,
@@ -326,6 +338,17 @@ class NBHomeScreenState extends State<NBHomeScreen>
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
         backgroundColor: Colors.white,
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.black),
+            onPressed: () {
+              setState(() {
+                isLoading = true;
+              });
+              fetchAllNews(); // Refresh the news
+            },
+          ),
+        ],
         bottom: TabBar(
           controller: tabController,
           tabs: [
@@ -344,7 +367,7 @@ class NBHomeScreenState extends State<NBHomeScreen>
           isScrollable: true,
         ),
       ),
-      drawer: AppDrawer(userState.profileImageUrl),
+      drawer: AppDrawer(),
       body: TabBarView(
         controller: tabController,
         children: [

@@ -68,6 +68,13 @@ dependencies:
   flutter_tts: ^4.2.0
   comment_box: ^0.0.18
   shared_preferences: ^2.3.4
+  firebase_storage: ^12.4.0
+  cloud_firestore: ^5.6.1
+  uuid: ^4.5.1
+  random_string: ^2.3.1
+  crypto: ^3.0.6
+  timeago: ^3.7.0
+  
   
   
 

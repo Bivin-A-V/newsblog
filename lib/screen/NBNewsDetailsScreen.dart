@@ -6,16 +6,19 @@ import 'package:newsblog/screen/NBCommentScreen.dart';
 import 'package:newsblog/utils/NBColors.dart';
 import 'package:newsblog/utils/NBImages.dart';
 import 'package:newsblog/utils/NBWidgets.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:newsblog/utils/globals.dart';
-import 'package:newsblog/utils/user_state.dart';
 
 class NBNewsDetailsScreen extends StatefulWidget {
-  final NewsModel newsDetails; // Receive NewsModel directly
+  final NewsModel newsDetails;
   final VoidCallback? onFollow;
 
-  const NBNewsDetailsScreen(
-      {Key? key, required this.newsDetails, this.onFollow})
-      : super(key: key);
+  const NBNewsDetailsScreen({
+    Key? key,
+    required this.newsDetails,
+    this.onFollow,
+  }) : super(key: key);
 
   @override
   NBNewsDetailsScreenState createState() => NBNewsDetailsScreenState();
@@ -23,25 +26,14 @@ class NBNewsDetailsScreen extends StatefulWidget {
 
 class NBNewsDetailsScreenState extends State<NBNewsDetailsScreen> {
   bool isFollowing = false;
-  // Check if the news is bookmarked
+  String currentUserName = '';
+  String? authorId;
+
+  String? get currentUserId => FirebaseAuth.instance.currentUser?.uid;
+
+  // Check if the article is bookmarked
   bool get isBookmarked {
     return bookmarkedNews.contains(widget.newsDetails);
-  }
-
-  void toggleFollow() {
-    setState(() {
-      isFollowing = !isFollowing;
-      if (isFollowing) {
-        // Increment followers for the article's author
-        if (widget.newsDetails.sourceName == userState.name) {
-          userState.followers++;
-        }
-
-        // Increment following count for the current user
-        userState.following++;
-        widget.onFollow?.call();
-      }
-    });
   }
 
   void toggleBookmark() {
@@ -54,6 +46,114 @@ class NBNewsDetailsScreenState extends State<NBNewsDetailsScreen> {
         toasty(context, 'Added to Bookmarks');
       }
     });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAuthorIdAndFollowStatus();
+    _fetchUserData();
+  }
+
+  Future<void> _fetchAuthorIdAndFollowStatus() async {
+    try {
+      // Get the author ID directly from the article
+      DocumentSnapshot articleSnapshot = await FirebaseFirestore.instance
+          .collection('Articles')
+          .doc(widget.newsDetails.articleId) // articleId == userId
+          .get();
+
+      if (articleSnapshot.exists) {
+        setState(() {
+          authorId =
+              articleSnapshot.id; // The document ID is the author's userId
+        });
+
+        // Listen for follow status in real-time
+        _listenFollowStatus();
+      }
+    } catch (e) {
+      toasty(context, 'Error fetching article details.');
+    }
+  }
+
+  void _listenFollowStatus() {
+    if (authorId == null || currentUserId == null) return;
+
+    // Listen to real-time changes in the follow status
+    FirebaseFirestore.instance
+        .collection('Users')
+        .doc(currentUserId)
+        .snapshots()
+        .listen((currentUserDoc) {
+      if (currentUserDoc.exists) {
+        setState(() {
+          List followingList = currentUserDoc['followingList'] ?? [];
+          isFollowing = followingList.contains(authorId);
+        });
+      }
+    });
+  }
+
+  Future<void> _fetchUserData() async {
+    String? userId = currentUserId;
+
+    if (userId == null) return;
+
+    DocumentSnapshot userDoc =
+        await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+
+    if (userDoc.exists) {
+      setState(() {
+        currentUserName = userDoc['name'] ?? '';
+      });
+    }
+  }
+
+  Future<void> toggleFollow() async {
+    if (authorId == null || currentUserId == null) {
+      toasty(context, 'Error performing follow action.');
+      return;
+    }
+
+    String userId = currentUserId!;
+    bool followAction = !isFollowing;
+
+    try {
+      // Perform Firestore updates in a batch
+      WriteBatch batch = FirebaseFirestore.instance.batch();
+
+      // Update current user's following count and list
+      batch.update(
+        FirebaseFirestore.instance.collection('Users').doc(userId),
+        {
+          'following': FieldValue.increment(followAction ? 1 : -1),
+          if (followAction)
+            'followingList': FieldValue.arrayUnion([authorId])
+          else
+            'followingList': FieldValue.arrayRemove([authorId]),
+        },
+      );
+
+      // Update the author's followers count
+      batch.update(
+        FirebaseFirestore.instance.collection('Users').doc(authorId),
+        {
+          'followers': FieldValue.increment(followAction ? 1 : -1),
+        },
+      );
+
+      // Commit the batch
+      await batch.commit();
+
+      setState(() {
+        isFollowing = followAction;
+      });
+
+      widget.onFollow?.call(); // Trigger the callback (if any)
+    } catch (e) {
+      toasty(context, 'Error performing follow action: $e');
+    }
   }
 
   @override
@@ -85,9 +185,7 @@ class NBNewsDetailsScreenState extends State<NBNewsDetailsScreen> {
                     isBookmarked ? Icons.bookmark : Icons.bookmark_border,
                     color: isBookmarked ? NBPrimaryColor : null,
                   ),
-                  onPressed: () {
-                    toggleBookmark();
-                  },
+                  onPressed: toggleBookmark,
                 ),
               ],
             ),
@@ -123,7 +221,8 @@ class NBNewsDetailsScreenState extends State<NBNewsDetailsScreen> {
               context,
               'Comment',
               () {
-                NBCommentScreen().launch(context);
+                NBCommentScreen(articleId: widget.newsDetails.articleId)
+                    .launch(context);
               },
             ),
             16.height,

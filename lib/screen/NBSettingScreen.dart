@@ -4,7 +4,6 @@ import 'package:nb_utils/nb_utils.dart';
 import 'package:newsblog/main.dart';
 import 'package:newsblog/model/NBModel.dart';
 import 'package:newsblog/screen/NBLanguageScreen.dart';
-import 'package:newsblog/screen/NBNotificationSettingScreen.dart';
 import 'package:newsblog/utils/NBColors.dart';
 import 'package:newsblog/utils/NBImages.dart';
 import 'package:newsblog/utils/NBWidgets.dart';
@@ -90,16 +89,6 @@ class NBSettingScreenState extends State<NBSettingScreen> {
                     ],
                   ).onTap(() {
                     NBChangePasswordScreen().launch(context);
-                  });
-                } else if (index == 3) {
-                  return Row(
-                    children: [
-                      Text('Notification Settings', style: primaryTextStyle())
-                          .expand(),
-                      const Icon(Icons.navigate_next).paddingAll(8),
-                    ],
-                  ).onTap(() {
-                    NBNotificationSettingScreen().launch(context);
                   });
                 } else {
                   return const SizedBox();

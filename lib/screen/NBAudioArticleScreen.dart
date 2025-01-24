@@ -3,6 +3,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:newsblog/model/news_model.dart';
 import 'package:newsblog/screen/NBAudioDetailsScreen.dart'; // Update import for audio details
+import 'package:newsblog/services/database.dart';
 import 'package:newsblog/services/news_service.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:newsblog/utils/NBColors.dart';
@@ -42,42 +43,36 @@ class _NBAudioArticleScreenState extends State<NBAudioArticleScreen>
     super.initState();
     tabController = TabController(length: 5, vsync: this);
     fetchAllNews();
-    // Add new audio article to the relevant category
-    if (widget.newAudioArticle != null) {
-      setState(() {
-        switch (widget.newAudioArticle!.category.toLowerCase()) {
-          case 'technology':
-            technologyNews.add(widget.newAudioArticle!);
-            break;
-          case 'fashion':
-            fashionNews.add(widget.newAudioArticle!);
-            break;
-          case 'sports':
-            sportsNews.add(widget.newAudioArticle!);
-            break;
-          case 'science':
-            scienceNews.add(widget.newAudioArticle!);
-            break;
-          default:
-            allNews.add(widget.newAudioArticle!);
-        }
-      });
-    }
   }
 
   Future<void> fetchAllNews() async {
     try {
+      // Fetch news from the API
       allNews = await newsService.fetchNews('top headlines');
       technologyNews = await newsService.fetchNews('technology');
       fashionNews = await newsService.fetchNews('fashion');
       sportsNews = await newsService.fetchNews('sports');
       scienceNews = await newsService.fetchNews('science');
+// Fetch created articles
+      List<NewsModel> createdArticles =
+          await DataBaseHelper().fetchAllArticles();
+
+      // Filter out articles where isAudioArticle is true
+      List<NewsModel> AudioArticles =
+          createdArticles.where((article) => article.isAudioArticle).toList();
+
+      // Merge created articles with API news
+      setState(() {
+        allNews = [...AudioArticles, ...allNews];
+      });
     } catch (e) {
       log("Error fetching news: $e");
     } finally {
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 

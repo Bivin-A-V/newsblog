@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -108,7 +108,8 @@ class _MyAppState extends State<MyApp> {
     }
 
     // Check if a user is signed in using Firebase
-    User? currentUser = FirebaseAuth.instance.currentUser;
+    firebase_auth.User? currentUser =
+        firebase_auth.FirebaseAuth.instance.currentUser;
     return currentUser == null; // Show NBWalkThroughScreen if no user
   }
 }

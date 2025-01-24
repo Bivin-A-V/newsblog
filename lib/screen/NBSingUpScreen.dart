@@ -1,5 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:newsblog/screen/NBHomeScreen.dart';
 import 'package:newsblog/services/auth_service.dart';
@@ -28,16 +31,6 @@ class NBSingUpScreenState extends State<NBSingUpScreen> {
   FocusNode passwordFocus = FocusNode();
 
   @override
-  void initState() {
-    super.initState();
-    init();
-  }
-
-  Future<void> init() async {
-    //
-  }
-
-  @override
   void dispose() {
     // Dispose controllers, focus nodes, and notifier
     nameController.dispose();
@@ -52,6 +45,34 @@ class NBSingUpScreenState extends State<NBSingUpScreen> {
 
     passwordObscureNotifier.dispose(); // Dispose the notifier
     super.dispose();
+  }
+
+  // Function to handle account creation
+  void createAccount() async {
+    String email = emailController.text;
+    String password = passwordController.text;
+    String username = nameController.text;
+
+    try {
+      // Call the AuthServiceHelper to create an account
+      String result = await AuthServiceHelper.createAccountWithEmail(
+          email, password, username);
+
+      if (result == "Account Created") {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text("Account Created")));
+
+        // Navigate to the home screen after successful account creation
+        finish(context);
+        push(NBHomeScreen());
+      } else {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text("Error: $result")));
+      }
+    } catch (error) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Error: $error")));
+    }
   }
 
   @override
@@ -100,12 +121,11 @@ class NBSingUpScreenState extends State<NBSingUpScreen> {
               context,
               'Create Account',
               () async {
-                userState.signupName = nameController.text;
-                userState.name = nameController.text;
                 await AuthServiceHelper.createAccountWithEmail(
-                  emailController.text,
-                  passwordController.text,
-                ).then((value) {
+                        emailController.text,
+                        passwordController.text,
+                        nameController.text)
+                    .then((value) {
                   if (value == "Account Created") {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text("Account Created")),
